@@ -155,7 +155,7 @@ locals {
       team             = "finance-engineering"
       data_class       = "internal"
       hipaa_in_scope   = "false"
-      cost_center      = "cc-2010"
+      cost_center      = ""
       env              = "prod"
     }
 
