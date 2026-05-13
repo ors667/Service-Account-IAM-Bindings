@@ -275,7 +275,7 @@ locals {
       team             = "data-engineering"
       data_class       = "internal"
       hipaa_in_scope   = "false"
-      cost_center      = "cc-2022"
+      cost_center      = ""
       env              = "prod"
     }
 
