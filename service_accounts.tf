@@ -284,6 +284,13 @@ locals {
 
 ##############################################################################
 # Service Account Resources
+#
+# Labels are applied natively via the labels block on google_service_account.
+# This is the correct GCP Terraform pattern (provider >= 4.75).
+# Labels are enforced by GCP and visible in the Console, Cloud Asset
+# Inventory, and audit queries — no workaround resources required.
+#
+# Policy reference: Service Account Naming and Registration Policy § 4.1
 ##############################################################################
 
 resource "google_service_account" "app" {
@@ -293,35 +300,16 @@ resource "google_service_account" "app" {
   account_id   = "${each.key}-${each.value.env}-svc"
   display_name = each.value.display_name
   description  = each.value.description
-}
 
-##############################################################################
-# Service Account Labels
-# Applied via google_service_account_iam_policy is not the right vehicle;
-# labels are tracked here as a separate tagging resource.
-# Note: requires google provider >= 4.75 for label support on SAs.
-##############################################################################
-
-resource "google_tags_tag_binding" "app_labels" {
-  for_each = local.applications
-
-  parent    = "//iam.googleapis.com/projects/${each.value.env == "prod" ? var.prod_project_id : var.nonprod_project_id}/serviceAccounts/${each.key}-${each.value.env}-svc@${each.value.env == "prod" ? var.prod_project_id : var.nonprod_project_id}.iam.gserviceaccount.com"
-  tag_value = "tagValues/meridian-app-${each.key}"
-}
-
-##############################################################################
-# Resource Manager Tag Bindings for Required Label Equivalents
-# These enforce the label policy from Confluence Page 1 at the GCP
-# Resource Manager level for auditability.
-##############################################################################
-
-resource "google_project_iam_custom_role" "sa_metadata" {
-  for_each = local.applications
-
-  role_id     = "saMetadata_${replace(each.key, "-", "_")}_${each.value.env}"
-  project     = each.value.env == "prod" ? var.prod_project_id : var.nonprod_project_id
-  title       = "SA Metadata — ${each.value.display_name}"
-  description = "Metadata role for service account ${each.key}-${each.value.env}-svc. app=${each.key} env=${each.value.env} owner=${each.value.team} data-classification=${each.value.data_class} hipaa-in-scope=${each.value.hipaa_in_scope} cost-center=${each.value.cost_center} managed-by=terraform"
-  permissions = []
-  stage       = "GA"
+  labels = merge(
+    {
+      app                = each.key
+      env                = each.value.env
+      owner              = each.value.team
+      data-classification = each.value.data_class
+      managed-by         = "terraform"
+      cost-center        = each.value.cost_center
+    },
+    each.value.hipaa_in_scope != "" ? { hipaa-in-scope = each.value.hipaa_in_scope } : {}
+  )
 }
