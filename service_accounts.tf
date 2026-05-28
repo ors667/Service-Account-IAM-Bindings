@@ -47,7 +47,7 @@ locals {
 
     "clinical-imaging" = {
       display_name     = "Clinical Imaging (DICOM)"
-      description      = "Service account for Clinical Imaging (prod) — Clinical Engineering. Reads and writes DICOM objects to GCS imaging buckets."
+      description      = "Service account for Clinical Imaging (DICOM) (prod) — Clinical Engineering. Reads and writes DICOM objects to GCS imaging buckets."
       team             = "clinical-engineering"
       data_class       = "phi"
       hipaa_in_scope   = "true"
@@ -171,7 +171,7 @@ locals {
 
     "hr-platform" = {
       display_name     = "Human Resources Platform"
-      description      = "Service account for HR Platform (prod) — Corporate Engineering. Manages employee records and HR workflows."
+      description      = "Service account for Human Resources Platform (prod) — Corporate Engineering. Manages employee records and HR workflows."
       team             = "corporate-engineering"
       data_class       = "pii"
       hipaa_in_scope   = "false"
