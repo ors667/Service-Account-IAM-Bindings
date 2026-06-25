@@ -28,6 +28,7 @@ resource "google_project_iam_member" "logging" {
   project = each.value.env == "prod" ? var.prod_project_id : var.nonprod_project_id
   role    = "roles/logging.logWriter"
   member  = "serviceAccount:${each.key}-${each.value.env}-svc@${each.value.env == "prod" ? var.prod_project_id : var.nonprod_project_id}.iam.gserviceaccount.com"
+  depends_on = [google_service_account.app]
 }
 
 resource "google_project_iam_member" "monitoring" {
@@ -36,6 +37,7 @@ resource "google_project_iam_member" "monitoring" {
   project = each.value.env == "prod" ? var.prod_project_id : var.nonprod_project_id
   role    = "roles/monitoring.metricWriter"
   member  = "serviceAccount:${each.key}-${each.value.env}-svc@${each.value.env == "prod" ? var.prod_project_id : var.nonprod_project_id}.iam.gserviceaccount.com"
+  depends_on = [google_service_account.app]
 }
 
 resource "google_project_iam_member" "tracing" {
@@ -44,6 +46,7 @@ resource "google_project_iam_member" "tracing" {
   project = each.value.env == "prod" ? var.prod_project_id : var.nonprod_project_id
   role    = "roles/cloudtrace.agent"
   member  = "serviceAccount:${each.key}-${each.value.env}-svc@${each.value.env == "prod" ? var.prod_project_id : var.nonprod_project_id}.iam.gserviceaccount.com"
+  depends_on = [google_service_account.app]
 }
 
 ##############################################################################
@@ -221,14 +224,6 @@ resource "google_project_iam_member" "ehr_core_bq_job_user" {
   depends_on = [google_service_account.app]
 }
 
-resource "google_bigquery_dataset_iam_member" "analytics_platform_bq_viewer" {
-  project    = var.prod_project_id
-  dataset_id = var.phi_bigquery_datasets["clinical"]
-  role       = "roles/bigquery.dataViewer"
-  member     = "serviceAccount:analytics-platform-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
-
-  depends_on = [google_service_account.app]
-}
 
 resource "google_project_iam_member" "analytics_platform_bq_job_user" {
   project = var.prod_project_id
@@ -238,14 +233,6 @@ resource "google_project_iam_member" "analytics_platform_bq_job_user" {
   depends_on = [google_service_account.app]
 }
 
-resource "google_bigquery_dataset_iam_member" "reporting_svc_bq_viewer" {
-  project    = var.prod_project_id
-  dataset_id = var.phi_bigquery_datasets["clinical"]
-  role       = "roles/bigquery.dataViewer"
-  member     = "serviceAccount:reporting-svc-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
-
-  depends_on = [google_service_account.app]
-}
 
 resource "google_project_iam_member" "reporting_svc_bq_job_user" {
   project = var.prod_project_id
@@ -292,13 +279,6 @@ resource "google_pubsub_topic_iam_member" "ehr_core_adt_publisher" {
 # NON-PHI APPLICATIONS — GCS access (bucket-level)
 ##############################################################################
 
-resource "google_storage_bucket_iam_member" "analytics_platform_gcs_reader" {
-  bucket = var.internal_gcs_buckets["analytics_staging"]
-  role   = "roles/storage.objectViewer"
-  member = "serviceAccount:analytics-platform-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
-
-  depends_on = [google_service_account.app]
-}
 
 resource "google_storage_bucket_iam_member" "reporting_svc_gcs_writer" {
   bucket = var.internal_gcs_buckets["reporting_output"]
@@ -308,13 +288,6 @@ resource "google_storage_bucket_iam_member" "reporting_svc_gcs_writer" {
   depends_on = [google_service_account.app]
 }
 
-resource "google_storage_bucket_iam_member" "data_integration_gcs_writer" {
-  bucket = var.internal_gcs_buckets["etl_staging"]
-  role   = "roles/storage.objectCreator"
-  member = "serviceAccount:data-integration-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
-
-  depends_on = [google_service_account.app]
-}
 
 resource "google_storage_bucket_iam_member" "document_mgmt_gcs_writer" {
   bucket = var.internal_gcs_buckets["document_store"]
@@ -437,4 +410,21 @@ resource "google_secret_manager_secret_iam_member" "identity_svc_okta_secret" {
   member    = "serviceAccount:identity-svc-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
 
   depends_on = [google_service_account.app]
+}
+
+resource "google_project_iam_audit_config" "project_audit_config" {
+  project = var.prod_project_id
+  service = "allServices"
+
+  audit_log_config {
+    log_type = "ADMIN_READ"
+  }
+
+  audit_log_config {
+    log_type = "DATA_READ"
+  }
+
+  audit_log_config {
+    log_type = "DATA_WRITE"
+  }
 }
